@@ -1,54 +1,65 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useState, useEffect } from "react";
+import { Link, useNavigate, useParams } from "react-router-dom";
 
-function Study({ decks }) {
+function Study() {
   const { deckId } = useParams();
   const navigate = useNavigate();
-  const [deck, setDeck] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [deck, setDeck] = useState({});
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
-  const [isFlipped, setIsFlipped] = useState(false);
+  const [isFront, setIsFront] = useState(true);
 
   useEffect(() => {
-    const deckFound = decks.find((d) => d.id === parseInt(deckId));
-    if (deckFound) {
-      setDeck(deckFound);
-    } else {
-      navigate("/"); // Redirect to home if the deck is not found
+    async function loadDeck() {
+      try {
+        const response = await fetch(`http://mockhost/decks/${deckId}`);
+        const fetchedDeck = await response.json();
+        setDeck(fetchedDeck);
+      } catch (error) {
+        console.log("There was an error fetching the deck", error);
+        setDeck(null);
+      }
     }
-    setIsLoading(false);
-  }, [deckId, decks, navigate]);
+    loadDeck();
+  }, [deckId]);
 
-  if (isLoading) {
+  if (deck === null) {
+    navigate("/");
+    return null;
+  }
+
+  if (!deck.cards) {
     return <p>Loading...</p>;
   }
 
-  if (!deck) {
-    return <p>Deck not found</p>;
-  }
-
-  if (deck.cards.length < 3) {
+  if (deck.cards.length <= 2) {
     return (
-      <div>
-        <p>Not enough cards. You need at least 3 cards to study.</p>
-        <Link to={`/decks/${deckId}/cards/new`} className="btn btn-primary">Add Cards</Link>
+      <div className="container text-center my-4">
+        <h2 className="text-danger">Not enough cards</h2>
+        <p>You need at least 3 cards to study. There are currently {deck.cards.length} cards in this deck.</p>
+        <Link to={`/decks/${deckId}/cards/new`}>
+          <button className="btn btn-dark">
+            <i className="bi bi-plus-lg"></i> Add Cards
+          </button>
+        </Link>
       </div>
     );
   }
 
   const handleFlip = () => {
-    setIsFlipped((prev) => !prev);
+    setIsFront(!isFront);
   };
 
   const handleNext = () => {
-    setIsFlipped(false);
     if (currentCardIndex < deck.cards.length - 1) {
       setCurrentCardIndex(currentCardIndex + 1);
+      setIsFront(true);
     } else {
-      if (window.confirm("Restart deck?")) {
+      const shouldRestart = window.confirm("Restart cards? Click 'cancel' to return to the home page.");
+      if (shouldRestart) {
         setCurrentCardIndex(0);
+        setIsFront(true);
       } else {
-        navigate('/');
+        navigate("/");
       }
     }
   };
@@ -57,25 +68,44 @@ function Study({ decks }) {
 
   return (
     <>
+      {/* Breadcrumb Navigation */}
       <nav aria-label="breadcrumb">
         <ol className="breadcrumb">
-          <li className="breadcrumb-item"><Link to="/">Home</Link></li>
-          <li className="breadcrumb-item"><Link to={`/decks/${deckId}`}>{deck.name}</Link></li>
-          <li className="breadcrumb-item active" aria-current="page">Study</li>
+          <li className="breadcrumb-item">
+            <Link to="/" style={{ color: 'black' }}>Home</Link>
+          </li>
+          <li className="breadcrumb-item">
+            <Link to={`/decks/${deckId}`} style={{ color: 'black' }}>{deck.name}</Link>
+          </li>
+          <li className="breadcrumb-item active" aria-current="page">
+            Study
+          </li>
         </ol>
       </nav>
 
-      <h1>{deck.name} - Study</h1>
-
-      <div className="card">
-        <div className="card-body">
-          <h5 className="card-title">Card {currentCardIndex + 1} of {deck.cards.length}</h5>
-          <p className="card-text">{isFlipped ? currentCard.back : currentCard.front}</p>
-          <button className="btn btn-secondary me-2" onClick={handleFlip}>Flip</button>
-          {isFlipped && (
-            <button className="btn btn-primary" onClick={handleNext}>Next</button>
-          )}
-        </div>
+      {/* Study Area */}
+      <div className="container my-4">
+        <h1 className="text-center">{deck.name}: Study</h1>
+        {currentCard && (
+          <div className="card text-center my-4" style={{ backgroundColor: '#F5F5DC', padding: '20px', borderRadius: '10px' }}>
+            <div className="card-body">
+              <h5 className="card-title">Card {currentCardIndex + 1} of {deck.cards.length}</h5>
+              <p className="card-text" style={{ color: '#3B2F2F', fontSize: '1.25rem' }}>
+                {isFront ? currentCard.front : currentCard.back}
+              </p>
+              <div className="d-flex justify-content-center gap-2">
+                <button className="btn btn-dark" onClick={handleFlip}>
+                  <i className="bi bi-arrow-repeat"></i> Flip
+                </button>
+                {!isFront && (
+                  <button className="btn btn-dark" onClick={handleNext}>
+                    <i className="bi bi-chevron-right"></i> Next
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </>
   );

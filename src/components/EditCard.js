@@ -1,123 +1,133 @@
-import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useEffect, useState } from "react";
+import { Link, useParams, useNavigate } from "react-router-dom";
 
 function EditCard() {
   const { deckId, cardId } = useParams();
-  const [deck, setDeck] = useState(null);
-  const [card, setCard] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
 
+  const [card, setCard] = useState({});
+  const [front, setFront] = useState("");
+  const [back, setBack] = useState("");
+
   useEffect(() => {
-    async function loadDeckAndCard() {
+    async function loadCard() {
       try {
-        // Fetch the deck
-        const deckResponse = await fetch(`http://mockhost/decks/${deckId}`);
-        if (!deckResponse.ok) {
-          throw new Error("Deck not found");
+        const response = await fetch(`http://mockhost/decks/${deckId}/cards/${cardId}`);
+        if (response.status === 404) {
+          navigate(deckId ? `/decks/${deckId}` : "/"); // Redirect appropriately if not found
+          return;
         }
-        const fetchedDeck = await deckResponse.json();
-        setDeck(fetchedDeck);
-
-        // Fetch the card
-        const cardResponse = await fetch(`http://mockhost/decks/${deckId}/cards/${cardId}`);
-        if (!cardResponse.ok) {
-          throw new Error("Card not found");
-        }
-        const fetchedCard = await cardResponse.json();
+        const fetchedCard = await response.json();
         setCard(fetchedCard);
-
+        setFront(fetchedCard.front);
+        setBack(fetchedCard.back);
       } catch (error) {
-        console.error("There was an error fetching the deck or card:", error);
-        if (error.message === "Deck not found") {
-          navigate("/"); // Redirect to home if the deck is not found
-        } else if (error.message === "Card not found") {
-          navigate(`/decks/${deckId}`); // Redirect to deck page if the card is not found
-        }
-      } finally {
-        setIsLoading(false);
+        console.log("There was an error fetching the card", error);
+        navigate(deckId ? `/decks/${deckId}` : "/");
       }
     }
-
-    loadDeckAndCard();
+    loadCard();
   }, [deckId, cardId, navigate]);
 
-  if (isLoading) {
-    return <p>Loading...</p>;
-  }
+  const handleFrontChange = (event) => setFront(event.target.value);
+  const handleBackChange = (event) => setBack(event.target.value);
 
-  if (!deck || !card) {
-    return <p>Deck or card not found</p>;
-  }
-
-  const handleInputChange = (event) => {
-    const { name, value } = event.target;
-    setCard({
-      ...card,
-      [name]: value,
-    });
-  };
-
-  const handleSubmit = async (event) => {
+  const handleSaveButton = async (event) => {
     event.preventDefault();
+
     try {
       const response = await fetch(`http://mockhost/decks/${deckId}/cards/${cardId}`, {
-        method: 'PUT',
+        method: "PUT",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
-        body: JSON.stringify(card),
+        body: JSON.stringify({
+          front: front,
+          back: back,
+        }),
       });
-      if (response.ok) {
-        navigate(`/decks/${deckId}`);
-      } else {
-        console.error("Failed to update the card");
+
+      if (!response.ok) {
+        throw new Error("Failed to update the card");
       }
+
+      navigate(`/decks/${deckId}`); // Navigate to the deck page after saving
     } catch (error) {
-      console.error("There was an error updating the card:", error);
+      console.error("Error updating the card:", error);
     }
   };
+
+  const handleCancelButton = () => navigate(`/decks/${deckId}`);
 
   return (
     <>
-      {/* Breadcrumbs */}
-      <nav aria-label="breadcrumb">
-        <ol className="breadcrumb">
-          <li className="breadcrumb-item"><Link to="/">Home</Link></li>
-          <li className="breadcrumb-item"><Link to={`/decks/${deckId}`}>{deck.name}</Link></li>
-          <li className="breadcrumb-item active" aria-current="page">Edit Card {cardId}</li>
-        </ol>
-      </nav>
+      {/* Breadcrumb Navigation */}
+      <div className="container my-3">
+        <nav aria-label="breadcrumb">
+          <ol className="breadcrumb">
+            <li className="breadcrumb-item">
+              <Link to="/" style={{ color: 'black' }}>Home</Link>
+            </li>
+            <li className="breadcrumb-item">
+              <Link to={`/decks/${deckId}`} style={{ color: 'black' }}>{card.deckName}</Link>
+            </li>
+            <li className="breadcrumb-item active" aria-current="page">
+              Edit Card
+            </li>
+          </ol>
+        </nav>
 
-      <h1>Edit Card</h1>
+        {/* Edit Card Form */}
+        <div className="card p-4" style={{ backgroundColor: '#F5F5DC', borderRadius: '10px' }}>
+          <h2 className="mb-4" style={{ color: '#3B2F2F' }}>Edit Card</h2>
+          <form onSubmit={handleSaveButton}>
+            <div className="mb-3">
+              <label htmlFor="front" className="form-label">
+                Front side
+              </label>
+              <textarea
+                className="form-control"
+                id="front"
+                rows="3"
+                value={front}
+                onChange={handleFrontChange}
+                placeholder="Enter front of the card"
+              />
+            </div>
+            <div className="mb-3">
+              <label htmlFor="back" className="form-label">
+                Back side
+              </label>
+              <textarea
+                className="form-control"
+                id="back"
+                rows="3"
+                value={back}
+                onChange={handleBackChange}
+                placeholder="Enter back of the card"
+              />
+            </div>
 
-      {/* Edit Card Form */}
-      <form onSubmit={handleSubmit}>
-        <div className="mb-3">
-          <label htmlFor="front" className="form-label">Front</label>
-          <textarea
-            id="front"
-            name="front"
-            className="form-control"
-            value={card.front}
-            onChange={handleInputChange}
-            required
-          />
+            <div className="d-flex justify-content-start gap-3">
+              <button
+                type="button"
+                className="btn"
+                style={{ backgroundColor: 'black', color: 'white' }}
+                onClick={handleCancelButton}
+              >
+                <i className="bi bi-x-lg"></i> Cancel
+              </button>
+              <button
+                type="submit"
+                className="btn"
+                style={{ backgroundColor: '#8B4513', color: 'white' }}
+              >
+                <i className="bi bi-check-lg"></i> Save
+              </button>
+            </div>
+          </form>
         </div>
-        <div className="mb-3">
-          <label htmlFor="back" className="form-label">Back</label>
-          <textarea
-            id="back"
-            name="back"
-            className="form-control"
-            value={card.back}
-            onChange={handleInputChange}
-            required
-          />
-        </div>
-        <button type="submit" className="btn btn-primary me-2">Save</button>
-        <Link to={`/decks/${deckId}`} className="btn btn-secondary">Cancel</Link>
-      </form>
+      </div>
     </>
   );
 }

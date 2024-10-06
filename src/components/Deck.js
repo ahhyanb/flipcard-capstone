@@ -1,136 +1,172 @@
-import React, { useEffect, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
 
 function Deck() {
   const { deckId } = useParams();
-  const [deck, setDeck] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
+  const [deck, setDeck] = useState({});
+  const [cards, setCards] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     async function loadDeck() {
       try {
         const response = await fetch(`http://mockhost/decks/${deckId}`);
-        if (!response.ok) {
-          throw new Error("Deck not found");
+        if (response.status === 404) {
+          navigate("/");
+          return;
         }
         const fetchedDeck = await response.json();
         setDeck(fetchedDeck);
+        setIsLoading(false);
       } catch (error) {
-        console.error("There was an error fetching the deck:", error);
-        navigate("/"); // Redirect to home if the deck is not found
-      } finally {
+        console.error("There was an error fetching the deck", error);
         setIsLoading(false);
       }
     }
-
     loadDeck();
   }, [deckId, navigate]);
+
+  useEffect(() => {
+    async function loadCards() {
+      try {
+        const response = await fetch(`http://mockhost/decks/${deckId}/cards`);
+        const fetchedCards = await response.json();
+        setCards(fetchedCards);
+      } catch (error) {
+        console.error("There was an error fetching the cards", error);
+      }
+    }
+    loadCards();
+  }, [deckId]);
+
+  const handleDeleteDeck = async () => {
+    const shouldDelete = window.confirm(
+      "Are you sure you want to delete this deck? This action cannot be undone."
+    );
+
+    if (shouldDelete) {
+      try {
+        await fetch(`http://mockhost/decks/${deckId}`, { method: "DELETE" });
+        navigate("/"); // Navigate back to the home page after deletion
+      } catch (error) {
+        console.error("There was an error deleting the deck", error);
+      }
+    }
+  };
+
+  const handleDeleteCard = async (cardId) => {
+    const shouldDelete = window.confirm(
+      "Are you sure you want to delete this card? This action cannot be undone."
+    );
+
+    if (shouldDelete) {
+      try {
+        await fetch(`http://mockhost/cards/${cardId}`, { method: "DELETE" });
+        setCards((prevCards) => prevCards.filter((card) => card.id !== cardId));
+      } catch (error) {
+        console.error("There was an error deleting the card", error);
+      }
+    }
+  };
 
   if (isLoading) {
     return <p>Loading...</p>;
   }
 
-  if (!deck) {
-    return <p>Deck not found</p>;
-  }
-
   return (
     <>
-      {/* Breadcrumbs */}
-      <nav aria-label="breadcrumb">
+      {/* Breadcrumb Navigation */}
+      <nav className="container my-3">
         <ol className="breadcrumb">
-          <li className="breadcrumb-item"><Link to="/">Home</Link></li>
-          <li className="breadcrumb-item active" aria-current="page">{deck.name}</li>
+          <li className="breadcrumb-item">
+            <Link to="/" style={{ color: 'black' }}>Home</Link>
+          </li>
+          <li className="breadcrumb-item active" aria-current="page">
+            {deck.name}
+          </li>
         </ol>
       </nav>
 
-      {/* Deck Information */}
-      <h1>{deck.name}</h1>
-      <p>{deck.description}</p>
-
-      {/* Actions */}
-      <div className="mb-3">
-        <Link to={`/decks/${deckId}/edit`} className="btn btn-secondary me-2">Edit</Link>
-        <Link to={`/decks/${deckId}/study`} className="btn btn-primary me-2">Study</Link>
-        <Link to={`/decks/${deckId}/cards/new`} className="btn btn-primary me-2">Add Card</Link>
-        <button className="btn btn-danger" onClick={handleDeleteDeck}>Delete</button>
+      {/* Deck Details */}
+      <div className="container my-4">
+        <div className="card p-4" style={{ backgroundColor: '#F5F5DC' }}>
+          <h2 style={{ color: '#3B2F2F' }}>{deck.name}</h2>
+          <p style={{ color: '#3B2F2F' }}>{deck.description}</p>
+          <div className="d-flex justify-content-start gap-3">
+            <button
+              className="btn"
+              style={{ backgroundColor: 'black', color: 'white' }}
+              onClick={() => navigate(`/decks/${deckId}/edit`)}
+            >
+              <i className="bi bi-pencil-square"></i> Edit
+            </button>
+            <button
+              className="btn"
+              style={{ backgroundColor: '#8B4513', color: 'white' }}
+              onClick={() => navigate(`/decks/${deckId}/study`)}
+            >
+              <i className="bi bi-book"></i> Study
+            </button>
+            <button
+              className="btn"
+              style={{ backgroundColor: '#8B4513', color: 'white' }}
+              onClick={() => navigate(`/decks/${deckId}/cards/new`)}
+            >
+              <i className="bi bi-plus-lg"></i> Add Cards
+            </button>
+            <button
+              className="btn"
+              style={{ backgroundColor: '#A52A2A', color: 'white' }}
+              onClick={handleDeleteDeck}
+            >
+              <i className="bi bi-trash"></i> Delete
+            </button>
+          </div>
+        </div>
       </div>
 
+      <hr />
+
       {/* Cards List */}
-      <h2>Cards</h2>
-      {deck.cards && deck.cards.length === 0 ? (
-        <p>No cards found in this deck.</p>
-      ) : (
-        <ul className="list-group">
-          {deck.cards && deck.cards.map((card) => (
-            <li key={card.id} className="list-group-item">
-              <div className="d-flex justify-content-between align-items-center">
-                <div>
-                  <p><strong>Q:</strong> {card.front}</p>
-                  <p><strong>A:</strong> {card.back}</p>
-                </div>
-                <div>
-                  <Link
-                    to={`/decks/${deckId}/cards/${card.id}/edit`}
-                    className="btn btn-secondary me-2"
-                  >
-                    Edit
-                  </Link>
+      <div className="container my-4">
+        <h2>Cards</h2>
+        <table className="table table-bordered table-striped">
+          <thead className="thead-dark">
+            <tr>
+              <th scope="col">Front / Questions</th>
+              <th scope="col">Back / Answers</th>
+              <th scope="col">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {cards.map((card) => (
+              <tr key={card.id}>
+                <td>{card.front}</td>
+                <td>{card.back}</td>
+                <td>
                   <button
-                    className="btn btn-danger"
+                    className="btn btn-sm"
+                    style={{ backgroundColor: 'black', color: 'white', marginRight: '10px' }}
+                    onClick={() => navigate(`/decks/${deckId}/cards/${card.id}/edit`)}
+                  >
+                    <i className="bi bi-pencil-square"></i> Edit
+                  </button>
+                  <button
+                    className="btn btn-sm"
+                    style={{ backgroundColor: '#A52A2A', color: 'white' }}
                     onClick={() => handleDeleteCard(card.id)}
                   >
-                    Delete
+                    <i className="bi bi-trash"></i> Delete
                   </button>
-                </div>
-              </div>
-            </li>
-          ))}
-        </ul>
-      )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </>
   );
-
-  async function handleDeleteDeck() {
-    const confirmDelete = window.confirm("Are you sure you want to delete this deck?");
-    if (confirmDelete) {
-      try {
-        const response = await fetch(`http://mockhost/decks/${deckId}`, {
-          method: "DELETE",
-        });
-        if (response.ok) {
-          navigate("/");
-        } else {
-          console.error("Failed to delete the deck");
-        }
-      } catch (error) {
-        console.error("There was an error deleting the deck:", error);
-      }
-    }
-  }
-
-  async function handleDeleteCard(cardId) {
-    const confirmDelete = window.confirm("Are you sure you want to delete this card?");
-    if (confirmDelete) {
-      try {
-        const response = await fetch(`http://mockhost/decks/${deckId}/cards/${cardId}`, {
-          method: "DELETE",
-        });
-        if (response.ok) {
-          // Remove the card from the current deck state
-          setDeck((prevDeck) => ({
-            ...prevDeck,
-            cards: prevDeck.cards.filter((card) => card.id !== cardId),
-          }));
-        } else {
-          console.error("Failed to delete the card");
-        }
-      } catch (error) {
-        console.error("There was an error deleting the card:", error);
-      }
-    }
-  }
 }
 
 export default Deck;
