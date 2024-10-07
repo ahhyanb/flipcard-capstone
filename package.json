@@ -2,7 +2,6 @@
   "name": "@qualified/react-challenge",
   "private": true,
   "version": "1.0.0",
-  "description": "",
   "main": "src/index.jsx",
   "sandpackVersion": "1.20.9",
   "dependencies": {
@@ -24,9 +23,29 @@
     "react-is": "18.2.0",
     "react-redux": "8.0.5",
     "react-router-dom": "6.4.5",
+    "react-scripts": "^5.0.1",
     "redux": "4.2.0",
     "reselect": "4.1.7",
     "styled-components": "5.3.6",
     "use-immer": "0.8.1"
+  },
+  "scripts": {
+    "start": "react-scripts start"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
   }
 }
