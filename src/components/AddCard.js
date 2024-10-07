@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
+import FormComponent from "./FormComponent";
 
 function AddCard() {
   const { deckId } = useParams();
@@ -27,30 +28,18 @@ function AddCard() {
     loadDeck();
   }, [deckId, navigate]);
 
-  const handleFrontChange = (event) => setFront(event.target.value);
-  const handleBackChange = (event) => setBack(event.target.value);
-
   const handleSaveButton = async (event) => {
     event.preventDefault();
-
     try {
       const response = await fetch(`http://mockhost/decks/${deckId}/cards`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          front: front,
-          back: back,
-        }),
+        body: JSON.stringify({ front, back }),
       });
-
-      if (!response.ok) {
-        throw new Error("Failed to save the card");
-      }
-
-      // Reset the form fields after saving the card
-      setFront("");
+      if (!response.ok) throw new Error("Failed to save the card");
+      setFront(""); // Clear the form after saving
       setBack("");
     } catch (error) {
       console.error("Error saving the card:", error);
@@ -59,8 +48,8 @@ function AddCard() {
 
   return (
     <>
-      {/* Breadcrumb Navigation */}
       <div className="container my-3">
+        {/* Breadcrumb Navigation */}
         <nav aria-label="breadcrumb">
           <ol className="breadcrumb">
             <li className="breadcrumb-item">
@@ -75,55 +64,18 @@ function AddCard() {
           </ol>
         </nav>
 
-        {/* Add Card Form */}
+        {/* Use FormComponent */}
         <div className="card p-4" style={{ backgroundColor: '#F5F5DC', borderRadius: '10px' }}>
           <h2 className="mb-4" style={{ color: '#3B2F2F' }}>Create Card</h2>
-          <form onSubmit={handleSaveButton}>
-            <div className="mb-3">
-              <label htmlFor="front" className="form-label">
-                Front side
-              </label>
-              <textarea
-                className="form-control"
-                id="front"
-                rows="3"
-                value={front}
-                onChange={handleFrontChange}
-                placeholder="Enter front of the card"
-              />
-            </div>
-            <div className="mb-3">
-              <label htmlFor="back" className="form-label">
-                Back side
-              </label>
-              <textarea
-                className="form-control"
-                id="back"
-                rows="3"
-                value={back}
-                onChange={handleBackChange}
-                placeholder="Enter back of the card"
-              />
-            </div>
-
-            <div className="d-flex justify-content-start gap-3">
-              <button
-                type="button"
-                className="btn"
-                style={{ backgroundColor: 'black', color: 'white' }}
-                onClick={() => navigate(`/decks/${deckId}`)}
-              >
-                <i className="bi bi-x-lg"></i> Done
-              </button>
-              <button
-                type="submit"
-                className="btn"
-                style={{ backgroundColor: '#8B4513', color: 'white' }}
-              >
-                <i className="bi bi-check-lg"></i> Save
-              </button>
-            </div>
-          </form>
+          <FormComponent
+            front={front}
+            back={back}
+            onFrontChange={(e) => setFront(e.target.value)}
+            onBackChange={(e) => setBack(e.target.value)}
+            onSubmit={handleSaveButton}
+            onCancel={() => navigate(`/decks/${deckId}`)}
+            isEditMode={false}
+          />
         </div>
       </div>
     </>
