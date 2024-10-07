@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
+import FormComponent from "./FormComponent";
 
 function EditCard() {
   const { deckId, cardId } = useParams();
@@ -14,7 +15,7 @@ function EditCard() {
       try {
         const response = await fetch(`http://mockhost/decks/${deckId}/cards/${cardId}`);
         if (response.status === 404) {
-          navigate(deckId ? `/decks/${deckId}` : "/"); // Redirect appropriately if not found
+          navigate(deckId ? `/decks/${deckId}` : "/");
           return;
         }
         const fetchedCard = await response.json();
@@ -29,40 +30,27 @@ function EditCard() {
     loadCard();
   }, [deckId, cardId, navigate]);
 
-  const handleFrontChange = (event) => setFront(event.target.value);
-  const handleBackChange = (event) => setBack(event.target.value);
-
   const handleSaveButton = async (event) => {
     event.preventDefault();
-
     try {
       const response = await fetch(`http://mockhost/decks/${deckId}/cards/${cardId}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          front: front,
-          back: back,
-        }),
+        body: JSON.stringify({ front, back }),
       });
-
-      if (!response.ok) {
-        throw new Error("Failed to update the card");
-      }
-
-      navigate(`/decks/${deckId}`); // Navigate to the deck page after saving
+      if (!response.ok) throw new Error("Failed to update the card");
+      navigate(`/decks/${deckId}`);
     } catch (error) {
       console.error("Error updating the card:", error);
     }
   };
 
-  const handleCancelButton = () => navigate(`/decks/${deckId}`);
-
   return (
     <>
-      {/* Breadcrumb Navigation */}
       <div className="container my-3">
+        {/* Breadcrumb Navigation */}
         <nav aria-label="breadcrumb">
           <ol className="breadcrumb">
             <li className="breadcrumb-item">
@@ -77,55 +65,18 @@ function EditCard() {
           </ol>
         </nav>
 
-        {/* Edit Card Form */}
+        {/* Use FormComponent */}
         <div className="card p-4" style={{ backgroundColor: '#F5F5DC', borderRadius: '10px' }}>
           <h2 className="mb-4" style={{ color: '#3B2F2F' }}>Edit Card</h2>
-          <form onSubmit={handleSaveButton}>
-            <div className="mb-3">
-              <label htmlFor="front" className="form-label">
-                Front side
-              </label>
-              <textarea
-                className="form-control"
-                id="front"
-                rows="3"
-                value={front}
-                onChange={handleFrontChange}
-                placeholder="Enter front of the card"
-              />
-            </div>
-            <div className="mb-3">
-              <label htmlFor="back" className="form-label">
-                Back side
-              </label>
-              <textarea
-                className="form-control"
-                id="back"
-                rows="3"
-                value={back}
-                onChange={handleBackChange}
-                placeholder="Enter back of the card"
-              />
-            </div>
-
-            <div className="d-flex justify-content-start gap-3">
-              <button
-                type="button"
-                className="btn"
-                style={{ backgroundColor: 'black', color: 'white' }}
-                onClick={handleCancelButton}
-              >
-                <i className="bi bi-x-lg"></i> Cancel
-              </button>
-              <button
-                type="submit"
-                className="btn"
-                style={{ backgroundColor: '#8B4513', color: 'white' }}
-              >
-                <i className="bi bi-check-lg"></i> Save
-              </button>
-            </div>
-          </form>
+          <FormComponent
+            front={front}
+            back={back}
+            onFrontChange={(e) => setFront(e.target.value)}
+            onBackChange={(e) => setBack(e.target.value)}
+            onSubmit={handleSaveButton}
+            onCancel={() => navigate(`/decks/${deckId}`)}
+            isEditMode={true}
+          />
         </div>
       </div>
     </>
