@@ -29,8 +29,11 @@
     "styled-components": "5.3.6",
     "use-immer": "0.8.1"
   },
-  "scripts": {
-    "start": "react-scripts start"
+ "scripts": {
+  "start": "react-scripts start",
+  "build": "react-scripts build",
+  "test": "react-scripts test",
+  "eject": "react-scripts eject"
   },
   "keywords": [],
   "author": "",
