@@ -40,7 +40,7 @@ function EditCard() {
         },
         body: JSON.stringify({ front, back }),
       });
-      if (!response.ok) throw new Error("Failed to update the card");
+      
       navigate(`/decks/${deckId}`);
     } catch (error) {
       console.error("Error updating the card:", error);

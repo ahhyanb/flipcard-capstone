@@ -38,9 +38,11 @@ function AddCard() {
         },
         body: JSON.stringify({ front, back }),
       });
-      if (!response.ok) throw new Error("Failed to save the card");
+      console.log(response);
+     
       setFront(""); // Clear the form after saving
       setBack("");
+      navigate(`/decks/${deckId}`);
     } catch (error) {
       console.error("Error saving the card:", error);
     }
